@@ -26,6 +26,6 @@ The code for simulation and algorithms defined in our paper is provided in [./co
 ## References
 
 [1] M.  Joshi,  A.  Singh,  S.  Ranu,  A.  Bagchi,  P.  Karia,  and  P.  Kala,“Batching and matching for food delivery in dynamic road networks,”inProc. ICDE, 2021.<br>
-[2] T. Suhr, A. J. Biega, M. Zehlike, K. P. Gummadi, and A. Chakraborty,“Two-sided  fairness  for  repeated  matchings  in  two-sided  markets:  Acase study of a ride-hailing platform,” inACM KDD, 2019.<br>
+[2] Anjali and Rahul Yadav and Ashish Nair and Abhijnan Chkraborty and Sayan Ranu and Amitabha Bagchi, "FairFoody: Bringing in Fairness in Food Delivery," inProc. AAAI, 2022.<br>
 [3] https://github.com/idea-iitd/FoodMatch<br>
 [4] https://github.com/idea-iitd/fairfoody<br>
