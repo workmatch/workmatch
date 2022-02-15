@@ -1,4 +1,4 @@
-# WORKMATCH : Guaranteed Work Framework for Food Delivery
+# Gigs with Guarantees: Achieving Fair Wage for Food Delivery Workers
 
 This repository contains official implementation of the algorithms defined in our paper.
 
