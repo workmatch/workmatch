@@ -9,6 +9,8 @@
 #include "food_data_util.hpp"
 #include "vehicle_assignment.hpp"
 #include "constants.hpp"
+#include "gaussian_process.hpp"
+#include <torch/script.h>
 
 using namespace std;
 
@@ -525,7 +527,7 @@ vector<vector<best_plan_tuple>> generate_start_order_undirected_graph_sp_as(vect
 				for (auto it:order_graph[i][j].first.first)
 					cout << it.str_val() << "|";
 				cout << "ERROR FOUND" << endl;
-				throw "ERROR FOUND \n";
+				cerr<<"ERROR FOUND"<<endl;
 			}
 		}
 	}
@@ -612,7 +614,7 @@ vector<best_plan_tuple> hac_cluster_orders(vector<order> &order_set, double glob
         dsu.merge(i_min, j_min);
         int set_i = dsu.root(i_min);
         if (set_i != i_min)
-            throw "PROBLEM IN HAC \n";
+            cout << "PROBLEM IN HAC" << endl;
         // order_graph[set_i][set_i] = get_routeplan_cost(order_graph[i_min][j_min].first.first, global_time);
         double new_cost = order_graph[i_min][j_min].first.second + order_graph[i_min][i_min].first.second + order_graph[j_min][j_min].first.second;
         order_graph[set_i][set_i] = order_graph[i_min][j_min];
@@ -724,7 +726,7 @@ vector<best_plan_tuple> hac_cluster_orders_vh(vector<order> &order_set, double g
         dsu.merge(i_min, j_min);
         int set_i = dsu.root(i_min);
         if (set_i != i_min)
-            throw "PROBLEM IN HAC \n";
+            cerr<<"PROBLEM IN HAC"<<endl;
         // order_graph[set_i][set_i] = get_routeplan_cost(order_graph[i_min][j_min].first.first, global_time);
         double new_cost = order_graph[i_min][j_min].first.second + order_graph[i_min][i_min].first.second + order_graph[j_min][j_min].first.second;
         order_graph[set_i][set_i] = order_graph[i_min][j_min];
@@ -835,7 +837,7 @@ vector<best_plan_tuple> hac_cluster_orders_as(vector<order> &order_set, double g
         dsu.merge(i_min, j_min);
         int set_i = dsu.root(i_min);
         if (set_i != i_min)
-            throw "PROBLEM IN HAC \n";
+            cout<< "PROBLEM IN HAC"<<endl;
         // order_graph[set_i][set_i] = get_routeplan_cost(order_graph[i_min][j_min].first.first, global_time);
         double new_cost = order_graph[i_min][j_min].first.second + order_graph[i_min][i_min].first.second + order_graph[j_min][j_min].first.second;
         order_graph[set_i][set_i] = order_graph[i_min][j_min];
@@ -947,7 +949,7 @@ vector<best_plan_tuple> hac_cluster_orders_as_restrict(vector<order> &order_set,
         dsu.merge(i_min, j_min);
         int set_i = dsu.root(i_min);
         if (set_i != i_min)
-            throw "PROBLEM IN HAC \n";
+            cout << "PROBLEM IN HAC" << endl;
         // order_graph[set_i][set_i] = get_routeplan_cost(order_graph[i_min][j_min].first.first, global_time);
         double new_cost = order_graph[i_min][j_min].first.second + order_graph[i_min][i_min].first.second + order_graph[j_min][j_min].first.second;
         order_graph[set_i][set_i] = order_graph[i_min][j_min];
@@ -1903,59 +1905,20 @@ void fair_foody(vector<int> &active_vehicles, vector<order> &active_orders,
 		cout << "assignment_time," << duration.count() << endl;
 }
 
-vector<best_plan_tuple> pack_orders_cluster_gen_rp_opt_general_sp_as_AR_fair(vector<order> &order_set, double global_time, int vh_size){
-	cout << "PACKING STARTED" << endl;
-	
-	double max_merge_cost = max_merge_cost_edt;
+// Implementation of Work4Food
+void workforfood(vector<int> &active_vehicles, vector<order> &active_orders,
+													  double global_time, vector<order> &rejected_orders){
 
-    if (max_merge_cost + FP_EPSILON >= MAX_NUM){
-        throw "SOME PROBLEM HERE \n";
-    }
 	auto start = std::chrono::high_resolution_clock::now();
 
-	int n = order_set.size();
+	int curr_time_slot = ((((long long int)(global_time))%86400 + 86400)%86400)/3600;
 
-	if (n == 0)
-		return {};
-
-	DSU dsu;
-	dsu.init(n);
-	
-	vector<vector<best_plan_tuple>> order_graph = generate_start_order_undirected_graph_sp_as(order_set, global_time);
-	
-	auto stop = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-	if (VERBOSITY == -1)
-		cout << "cluster_pre_time," << duration.count() << endl;
-
-	for(int i = 0; i < n; i++){
-		for(int j = i+1; j < n; j++){
-			double cost = order_graph[i][j].first.second;
-			if (cost + FP_EPSILON >= MAX_NUM)
-				continue;
-		}
-	}
-	
-	vector<best_plan_tuple> cluster_pack;
-	for(auto it:dsu.set_to_elems){
-		cluster_pack.push_back(order_graph[it.first][it.first]);
-	}
-	cout << "CLUSTER_SIZE = " << cluster_pack.size() << endl;
-	cout << "CLUSTER_ITER = " << 0 << endl;
-	return cluster_pack;
-}
-
-void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, double global_time, vector<order> &rejected_orders){
-	auto start = std::chrono::high_resolution_clock::now();
-
-	int curr_time_slot = ((((long long int)(global_time - global_conf.DAY_TIMESTAMP))%86400 + 86400)%86400)/3600;
-
-	cout << global_time << " " << global_conf.end_time + FP_EPSILON << endl;
+	cout << global_time << " " << end_time + FP_EPSILON << endl;
 
 	bool enabled_reshuffling = false;
 
 	//order reshuffling - may be turned off
-	if (enabled_reshuffling && global_time <= global_conf.end_time + FP_EPSILON){
+	if (enabled_reshuffling && global_time <= end_time + FP_EPSILON){
 		cout << "IN" << endl;
 		for(auto idx:active_vehicles){
 			vehicle* vh = &all_vehicles[idx];
@@ -1989,9 +1952,7 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 			else{
 				if (latest_pickup_event){
 					(vh->order_set).clear();
-					vh->assign_order_pack(new_order_set, new_route_plan, global_time,
-										true,
-										false);
+					vh->assign_order_pack(new_order_set, new_route_plan, global_time);
 				}
 				else{
 					(vh->order_set) = new_order_set;
@@ -2007,8 +1968,9 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 	auto duration3 = std::chrono::duration_cast<std::chrono::microseconds>(stop3 - start);
 	if (VERBOSITY == -1)
 		cout << "collect_time," << duration3.count() << endl;
-
-	vector<best_plan_tuple> bp_packs = pack_orders_cluster_gen_rp_opt_general_sp_as(active_orders, global_time, active_vehicles.size());
+                                             
+    //CHECK_AR
+	vector<best_plan_tuple> bp_packs = hac_cluster_orders_as(active_orders, global_time);
 	
 	vector<vector<order>> order_packs(bp_packs.size());
 	for(int i = 0; i < int(bp_packs.size()); i++){
@@ -2028,7 +1990,6 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 
 	vector<vector<vector<float>>> gp_inputs_after_o(active_vehicles.size(), vector<vector<float>>(order_packs.size(), vector<float>(GP_NUM_FEATURES, -FLT_MAX)));
 	vector<float> gp_outputs_after_o;
-
 	vector<vector<bool>> vh_order_is_compatible(active_vehicles.size(), vector<bool>(order_packs.size(), false));
 
 	vector<vector<double>> cost_mat(active_vehicles.size(), vector<double>(order_packs.size(), MAX_NUM));
@@ -2059,10 +2020,10 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 	vector<double> dist_vh(nodes_to_latlon.size(), MAX_NUM);
 	vector<double> dist_ac(nodes_to_latlon.size(), MAX_NUM);
 
-	cout << global_time << " MJ " << global_conf.end_time + FP_EPSILON << endl;
+	cout << global_time << " MJ " << end_time + FP_EPSILON << endl;
 
 	// Best First Search around vehicle
-	if ((global_time <= global_conf.end_time + FP_EPSILON) && (active_orders.size() > 0)){
+	if ((global_time <= end_time + FP_EPSILON) && (active_orders.size() > 0)){
 		cout << "AS IN AS" << endl;
 
 		for(int vhi = 0; vhi < int(active_vehicles.size()); vhi++){
@@ -2071,10 +2032,15 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 			}
 			vehicle vh = all_vehicles[active_vehicles[vhi]];
 			GP_input vh_gpi = GP_input(global_time, vh);
+			// gp_inputs_before_o.push_back(vh_gpi.input);
 			gp_inputs_before_o.insert(gp_inputs_before_o.end(), vh_gpi.input.begin(), vh_gpi.input.end());
 		}
 
-		cout<<"ALL INPUTS FORWARD BEFORE O"<<endl;
+		// cout<<"ALL INPUTS FORWARD BEFORE O"<<endl;
+		// for(int _i=0; _i<gp_inputs_before_o.size(); _i++){
+		// 	cout << gp_inputs_before_o[_i] << "," << endl;
+		// }
+		// cout<<"ALL INPUTS FORWARD BEFORE O"<<endl;
 
 		auto torch_options = torch::TensorOptions().dtype(torch::kFloat32);
 		double gp_mean = gp_model_parameters.first[GP_NUM_FEATURES], gp_std = gp_model_parameters.second[GP_NUM_FEATURES];
@@ -2109,24 +2075,16 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 				else
 					wage_guarantee[vh.vehicle_id][vh_curr_shift] = gp_outputs_before_o[vhi];
 
-
 				cout<<"WAGE_GUARANTEE," <<vh.vehicle_id<<","<<vh_curr_shift<<","<<wage_guarantee[vh.vehicle_id][vh_curr_shift];
 				cout<<","<<de_int.start_time<<","<<de_int.end_time<<","<<global_time;
 				cout<<","<<wage_guarantee[vh.vehicle_id][vh_curr_shift]/(de_int.end_time - de_int.start_time)<<","<<vh.rating<<endl;
 
 			}
 			vector<event> org_route_plan = vh.route_plan;
-			unordered_map<string, double> org_d_times = get_delivered_times(vh, org_route_plan, global_time,
-																		true, false);
+			unordered_map<string, double> org_d_times = get_delivered_times(vh, org_route_plan, global_time);
 			double org_cost;
-			if (cost_type=="EDT")
-				org_cost = get_route_plan_extra_delivery_time(org_d_times, org_route_plan);
-			else if (cost_type=="NEDT")
-				org_cost = get_route_plan_normalized_extra_delivery_time(org_d_times, org_route_plan);
-			else{
-				throw invalid_argument("COST TYPE NOT RECOGNISED\n");
-			}
-
+			
+			org_cost = get_route_plan_extra_delivery_time(org_d_times, org_route_plan);
 			
 
 			// feasible order packs seen by vehicle
@@ -2142,6 +2100,7 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 			
 			priority_queue<pair<double, long long int>> pq;
 
+			// dist + h()
 			pq.push({-dist_vh[vh_start_node], vh_start_node});
 
 			double dist, alt;
@@ -2166,7 +2125,9 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 				}
 
 				visited[u] = true;
+				// if (node_to_order_pack.find(u) != node_to_order_pack.end()){
 				if (node_to_order_pack[u].size() != 0){
+					// if (hhl_sp_query(vh_start_node, u) < vehicle_rest_radius_cap){
 						for(auto pack_idx : node_to_order_pack[u]){
 							if (count_edges > max_count_edges)
 								break;
@@ -2178,15 +2139,14 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 							vector<order> op = order_packs[pack_idx];
 							vector<event> bp = bp_packs[pack_idx].first.first;
 			
-							if ((int(vh.order_set.size() + op.size()) > global_conf.batching_cap))
+							if ((int(vh.order_set.size() + op.size()) > batching_cap))
 								continue;
 							
 							vector<vector<event>> all_route_plans = gen_inserted_sequence_rp(org_route_plan, bp);
 							for(int ri = 0; ri < int(all_route_plans.size()); ri++){
 								bool cap_compatible = check_capacity_constraint(vh, all_route_plans[ri]);
 
-								unordered_map<string, double> d_times = get_delivered_times(vh, all_route_plans[ri], global_time,
-																					true, false);
+								unordered_map<string, double> d_times = get_delivered_times(vh, all_route_plans[ri], global_time);
 								
 								if (d_times.empty() || !cap_compatible)
 									continue;
@@ -2196,18 +2156,13 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 								if (!sla_compatible)
 									continue;
 
-								if(global_conf.batching_cap == 1){
+								if(batching_cap == 1){
 									assert(org_cost == 0);
 								}
 
 								double plan_cost;
-								if (cost_type=="EDT")
-									plan_cost = get_route_plan_extra_delivery_time(d_times, all_route_plans[ri]) - org_cost;
-								else if (cost_type=="NEDT")
-									plan_cost = get_route_plan_normalized_extra_delivery_time(d_times, all_route_plans[ri]) - org_cost;
-								else{
-									throw invalid_argument("COST TYPE NOT RECOGNISED\n");
-								}
+								
+								plan_cost = get_route_plan_extra_delivery_time(d_times, all_route_plans[ri]) - org_cost;
 								
 								if (plan_cost < min_cost){
 									min_cost = plan_cost;
@@ -2215,11 +2170,11 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 									min_delivery_times = d_times;
 								}
 							}
-							// change this
+							
 							cost_mat_foodmatch[vhi][pack_idx] = min_cost;
 							vh_o_total_delivery_times[vhi][pack_idx] = min_delivery_times[order_packs[pack_idx][0].order_id] - order_packs[pack_idx][0].order_time;
 
-
+							// Model inputs for wage prediction -> ['curr_time', 'vh_lat', 'vh_lon', 'elapsed_time', 'remaining_time', 'travel_time_till_now', 'carrying_orders', 'event']
 							best_plans[vhi][pack_idx] = {{min_plan, min_cost}, min_delivery_times};
 							if (min_cost + FP_EPSILON < MAX_NUM){
 								count_edges++;
@@ -2230,7 +2185,7 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 
 									gp_inputs_after_o[vhi][pack_idx] = vh_o_gpi.input;
 									
-									pair<double, double> travel_and_wait_time = get_travel_and_wait_times_AR(vh, min_plan, global_time, /*mean_weights=*/true, /*only_positive_dev=*/false);
+									pair<double, double> travel_and_wait_time = get_travel_and_wait_times_AR(vh, min_plan, global_time);
 									vh_o_travel_times[vhi][pack_idx] = travel_and_wait_time.first;
 									vh_o_wait_times[vhi][pack_idx] = travel_and_wait_time.second;
 
@@ -2238,18 +2193,18 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 							}
 
 						}
+					//}
 				}
 				if (count_edges > max_count_edges)
 					break;
 
 				for(int ei = 0; ei < int(edges[u].size()); ei++){
 					v = edges[u][ei];
-					double e_weight = get_edge_weight(u, v, curr_time_slot, true, false);
+					double e_weight = get_edge_weight(u, v, curr_time_slot);
 
 					double heur_val = heuristic_function(vh, v);
 					
 					alt = dist_vh[u] + (1-heuristic_multiplier)*(e_weight)/max_time_dist + heuristic_multiplier*heur_val;
-					< "mj_alt ==> " << alt << " " << dist_vh[u] << " " << e_weight << " " << heuristic_multiplier*heur_val << endl;
 
 					if (alt < dist_vh[v]){
 						dist_ac[v] = dist_ac[u] + e_weight;
@@ -2280,14 +2235,16 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 		}
 		
 
-		// run inferemce im a batched manner
+		// run inference in a batched manner
 		for(int i=0; i<=int(gp_inputs_after_o_flattened.size()/(GP_NUM_FEATURES*100)); i++){
 			if(GP_NUM_FEATURES*100*i == gp_inputs_after_o_flattened.size()){
 				break;
 			}
 			vector<float> batched_input(gp_inputs_after_o_flattened.begin() + GP_NUM_FEATURES*100*i, (i!=int(gp_inputs_after_o_flattened.size()/(GP_NUM_FEATURES*100)))?(gp_inputs_after_o_flattened.begin() + GP_NUM_FEATURES*100*(i+1)):(gp_inputs_after_o_flattened.end()));
 			vector<torch::jit::IValue> gp_tensor_inputs_after_o = { torch::from_blob(batched_input.data(), /*shape=*/{int(batched_input.size()/GP_NUM_FEATURES), GP_NUM_FEATURES}, torch_options) };
+			// cout<<"PRE MODEL FORWARD AFTER O"<<endl;
 			auto raw_after_o_output = gp_model.forward(gp_tensor_inputs_after_o);
+			// cout<<"POST MODEL FORWARD AFTER O"<<endl;
 			at::Tensor temp_after_o_output = raw_after_o_output.toTuple()->elements()[0].toTensor();                        
 			std::vector<float> temp_after_o_vec(temp_after_o_output.data_ptr<float>(), temp_after_o_output.data_ptr<float>() + temp_after_o_output.numel());
 			gp_outputs_after_o.insert(gp_outputs_after_o.end(), temp_after_o_vec.begin(), temp_after_o_vec.end());
@@ -2303,18 +2260,17 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 		int compatible_vh_order_idx = 0;
 		for(int vhi=0; vhi < int(active_vehicles.size()); vhi++){
 			vehicle v = all_vehicles[active_vehicles[vhi]];
-			pair<double, double> vh_curr_travel_and_wait_times = get_travel_and_wait_times_AR(v, v.route_plan, global_time, /*mean_weights=*/true, /*only_positive_dev=*/false);
+			pair<double, double> vh_curr_travel_and_wait_times = get_travel_and_wait_times_AR(v, v.route_plan, global_time);
 			for(int pack_idx=0; pack_idx<int(order_packs.size()); pack_idx++){
 				if(!vh_order_is_compatible[vhi][pack_idx]){
 					continue;
 				}
 
 				int curr_shift = v.current_active_shift_AR(global_time);
-				// start time and global times are UTC timestamps
 				double start_time = v.de_intervals[curr_shift].start_time;
 				double end_time = v.de_intervals[curr_shift].end_time;
 				
-				if(global_conf.batching_cap == 1){
+				if(batching_cap == 1){
 					assert(vh_curr_travel_and_wait_times.first == 0);
 					assert(vh_curr_travel_and_wait_times.second == 0);
 					assert(v.route_plan.size() == 0);
@@ -2327,31 +2283,33 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 
 				double MP_v = 0;
 				if (GUARANTEE_TYPE == "dynamic" || GUARANTEE_TYPE == "dynamic_lower_bound"){
-					int start_time_slot = ((long)(start_time - (global_conf.DAY_TIMESTAMP + 86400*(global_conf.sim_date - 1))))/3600;
-					int global_time_slot = ((long)(global_time - (global_conf.DAY_TIMESTAMP + 86400*(global_conf.sim_date - 1))))/3600;
-					int end_time_slot = ((long)(end_time - (global_conf.DAY_TIMESTAMP + 86400*(global_conf.sim_date - 1))))/3600;
+					int start_time_slot = ((long)(start_time - (86400*(stoi(simulation_day) - 1))))/3600;
+					int global_time_slot = ((long)(global_time - (86400*(stoi(simulation_day) - 1))))/3600;
+					int end_time_slot = ((long)(end_time - (86400*(stoi(simulation_day) - 1))))/3600;
 					
 					assert(start_time <= global_time);
 					assert(global_time <= end_time);
 					assert(start_time_slot <= global_time_slot);
 					assert(global_time_slot <= end_time_slot);
 
+					// guarantee from vehicle start time to current time
 					for(int time_slot=start_time_slot; time_slot<=global_time_slot; time_slot++){
 						MP_v += hourly_guarantee[time_slot%24] * 3600; 
 						assert(MP_v >= 0);
 					}
-					MP_v -= hourly_guarantee[start_time_slot%24] * (start_time - (global_conf.DAY_TIMESTAMP + 86400*(global_conf.sim_date - 1) + 3600*start_time_slot)); 
+					MP_v -= hourly_guarantee[start_time_slot%24] * (start_time - (86400*(stoi(simulation_day) - 1) + 3600*start_time_slot)); 
 					assert(MP_v >= 0);
-					MP_v -= hourly_guarantee[global_time_slot%24] * ((global_conf.DAY_TIMESTAMP + 86400*(global_conf.sim_date - 1) + 3600*(global_time_slot+1)) - global_time);
+					MP_v -= hourly_guarantee[global_time_slot%24] * ((86400*(stoi(simulation_day) - 1) + 3600*(global_time_slot+1)) - global_time);
 					assert(MP_v >= 0);
 
+					// guarantee from current time to vehicle end time
 					for(int time_slot=global_time_slot; time_slot<=end_time_slot; time_slot++){
 						MP_v += MIN_WAGE_DISCOUNT_FACTOR * hourly_guarantee[time_slot%24] * 3600; 
 						assert(MP_v >= 0);
 					}
-					MP_v -= MIN_WAGE_DISCOUNT_FACTOR * hourly_guarantee[global_time_slot%24] * (global_time - (global_conf.DAY_TIMESTAMP + 86400*(global_conf.sim_date - 1) + 3600*global_time_slot)); 
+					MP_v -= MIN_WAGE_DISCOUNT_FACTOR * hourly_guarantee[global_time_slot%24] * (global_time - (86400*(stoi(simulation_day) - 1) + 3600*global_time_slot)); 
 					assert(MP_v >= 0 );
-					MP_v -= MIN_WAGE_DISCOUNT_FACTOR * hourly_guarantee[end_time_slot%24] * ((global_conf.DAY_TIMESTAMP + 86400*(global_conf.sim_date - 1) + 3600*(end_time_slot+1)) - end_time);
+					MP_v -= MIN_WAGE_DISCOUNT_FACTOR * hourly_guarantee[end_time_slot%24] * ((86400*(stoi(simulation_day) - 1) + 3600*(end_time_slot+1)) - end_time);
 					assert(MP_v >= 0);
 				}
 				else if (GUARANTEE_TYPE == "dynamic_gp" || GUARANTEE_TYPE == "rating"){
@@ -2397,6 +2355,9 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 			min_cost = min(min_cost, it2);
 	}
 
+	// Make cost matrix positive
+	// Shortest delivery time is calculated based on graph of one timeslot
+	// During simulation, timeslot and therefore graphs may change resulting in negative costs
 	for(int i = 0; i < int(active_vehicles.size()); i++){
 		for(int j = 0; j < int(order_packs.size()); j++){
 			cost_mat[i][j] = (cost_mat[i][j] > max_cost_val)?max_cost_val:cost_mat[i][j];
@@ -2407,7 +2368,7 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 	// order index assigned to each vehicle (-1 if not assigned an order)
 	vector<int> assignment(cost_mat.size(), -1);
 	if (int(cost_mat.size()) > 0 && int(cost_mat[0].size()) > 0){
-		double cost = fast_HUN_2(cost_mat, assignment);
+		double cost = HUN_ASSIGN(cost_mat, assignment);
 	}
 	stop = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
@@ -2428,9 +2389,8 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 	for(int i = 0; i < int(assignment.size()); i++){
 		if (assignment[i] != -1){
 			all_vehicles[active_vehicles[i]].assign_order_pack(order_packs[assignment[i]],
-															best_plans[i][assignment[i]].first.first, global_time,
-															true, false);
-			if(global_conf.batching_cap == 1){
+															best_plans[i][assignment[i]].first.first, global_time);
+			if(batching_cap == 1){
 				assert(all_vehicles[active_vehicles[i]].route_plan.size() == 2);
 			}
 
@@ -2445,12 +2405,12 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 					 cout << fixed << "ASSIGN,"<< ord_obj.order_id << "," << ass_vh.vehicle_id << ","<< global_time << ",";
 					 cout << nodes_to_latlon[ass_vh.path[ass_vh.path_present_idx]].first << "," << nodes_to_latlon[ass_vh.path[ass_vh.path_present_idx]].second << ",";
 					 cout << ord_obj.restaurant.rest_latlon << "," << ord_obj.customer.cust_latlon << ","; 
-					 cout << active_vehicles.size() << "," << active_orders.size();
+					 cout << active_vehicles.size() << "," << active_orders.size();// << endl;
 					 cout << "," << "mwCost:" << cost_mat_minwage[i][assignment[i]] << "," << "fmCost:" << cost_mat_foodmatch[i][assignment[i]];
 					 cout << "," << "sdt:" << order_packs[assignment[i]][0].shortest_delivery_time;
 					 cout << "," << "travel:" << vh_o_travel_times[i][assignment[i]];
 					 cout << "," << "wait:" << vh_o_wait_times[i][assignment[i]];
-					 cout << "," << "computation:" << global_time - order_packs[assignment[i]][0].order_time; 
+					 cout << "," << "computation:" << global_time - order_packs[assignment[i]][0].order_time; // time b/w order placement and assignment to a vehicle
 					 cout << "," << "prep:" << order_packs[assignment[i]][0].prep_time;
 					 cout << "," << "edt:" << vh_o_total_delivery_times[i][assignment[i]];
 					 cout << endl;
@@ -2469,6 +2429,3 @@ void workforfood(vector<int> &active_vehicles, vector<order> &active_orders, dou
 		}
 	}
 }
-
-
-

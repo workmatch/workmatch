@@ -21,6 +21,6 @@ void foodmatch_FULL(vector<int> &active_vehicles, vector<order> &active_orders,
 void fair_foody(vector<int> &active_vehicles, vector<order> &active_orders,
                     double global_time, vector<order> &rejected_orders);
 
-// Implementation of 2SF
+// Implementation of Work4Food
 void workforfood(vector<int> &active_vehicles, vector<order> &active_orders,
                     double global_time, vector<order> &rejected_orders);

@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <torch/script.h>
 
 using namespace std;
 
@@ -48,3 +49,22 @@ extern double start_time;
 // End time of simulation in seconds
 extern double end_time;
 
+
+// Work4Food Constants
+
+extern string gp_model_path;
+// size of tensor passed in GP model
+extern int GP_NUM_FEATURES;
+// Minimum guaranteed wage 
+extern double MIN_WAGE_PER_SECOND;
+extern double MIN_WAGE_DISCOUNT_FACTOR;
+extern bool USE_WAIT_TIME;
+extern string GUARANTEE_TYPE; // valid values = static, dynamic, dynamic_lower_bound, dynamic_gp
+extern bool REJECT_DRIVERS; // driver rejection based on minwage
+// associated array that stores hourly guarantee is hourly_guarantee 
+extern vector<double> hourly_guarantee;
+extern float work_ratio_wrt_ff;
+extern float XDT_OPTIMIZATION_WEIGHT;
+// Deserialize the ScriptModule from a file using torch::jit::load().
+extern torch::jit::script::Module gp_model;
+extern pair<vector<float>, vector<float>> gp_model_parameters;

@@ -25,3 +25,21 @@ string simulation_city = "A";
 double delta_time = 180;
 double start_time = 0*3600;
 double end_time = 24*3600;
+
+
+// Work4Food Constants
+
+string gp_model_path = "";
+int GP_NUM_FEATURES = 11; // Model inputs for wage prediction -> ['curr_time', 'vh_lat', 'vh_lon', 'elapsed_time', 'remaining_time', 'travel_time_till_now', 'wait_time_till_now', 'carrying_orders', 'event']
+                        // chnged to 11 in main id REJECT_DRIVERS, extra columns: 'n_drivers_window' and 'n_orders_window'
+double MIN_WAGE_PER_SECOND = 0.25;
+double MIN_WAGE_DISCOUNT_FACTOR = 0;
+bool USE_WAIT_TIME = true;
+string GUARANTEE_TYPE = "static";
+bool REJECT_DRIVERS = false; // driver rejection based on minwage
+vector<double> hourly_guarantee(24);
+float work_ratio_wrt_ff = 1;
+float XDT_OPTIMIZATION_WEIGHT = 1;
+// Deserialize the ScriptModule from a file using torch::jit::load().
+torch::jit::script::Module gp_model;
+pair<vector<float>, vector<float>> gp_model_parameters;

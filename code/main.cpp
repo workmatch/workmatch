@@ -23,6 +23,48 @@ void simulation(){
     vector<order> rejected_orders;
     int prev_time_slot = ((((long long int)(global_time))%86400 + 86400)%86400)/3600;
     load_labels(prev_time_slot);
+
+    // the last index (GP_NUM_FEATURES) stores output mean and std
+    vector<float> gp_model_mean(GP_NUM_FEATURES+1); 
+    vector<float> gp_model_std(GP_NUM_FEATURES+1);
+    
+    // Work4Food main
+
+    if(assignment_algorithm == "WORK4FOOD"){
+        try {
+            cout<< "LOADING MODEL "+gp_model_path+".pt"<<endl;
+            gp_model = torch::jit::load(gp_model_path + ".pt");
+            cout<< "DONE LOADING MODEL: "<<gp_model_path<<endl;
+            cerr<< "DONE LOADING MODEL: "<<gp_model_path<<endl;
+
+            cout<< "BEGINNING FILE READING "<<(gp_model_path + ".parameters")<<endl;
+            ifstream gp_mean_std_input_file(gp_model_path + ".parameters");
+            float fValue;
+            for(int i=0; i<gp_model_mean.size(); i++){
+                gp_mean_std_input_file >> gp_model_mean[i];
+                // cout<<gp_model_mean[i]<<endl;
+            }
+            cout<< "DONE READING MEANS"<<endl;
+            for(int i=0; i<gp_model_std.size(); i++){
+                gp_mean_std_input_file >> gp_model_std[i];
+                //  cout<<gp_model_std[i]<<endl;
+            }
+            cout<< "DONE READING VARIANCE"<<endl;
+        }catch (const c10::Error& e) {
+            std::cerr << "error loading the model\n";
+            return;
+        }
+    }
+
+    cout<<"PARAMETERS:"<<endl;
+    for(int i=0; i<GP_NUM_FEATURES+1; i++){
+        gp_model_parameters.first.push_back(gp_model_mean[i]);
+        gp_model_parameters.second.push_back(gp_model_std[i]);
+        cout<<gp_model_parameters.first[i]<<","<<gp_model_parameters.second[i]<<endl;
+    }
+    cout<<"GP_NUM_FEATURES: "<<GP_NUM_FEATURES<<endl;
+    
+
     for(global_time = start_time; global_time < end_time + 4*3600 ; global_time += delta_time){
         int curr_time_slot = ((((long long int)(global_time))%86400 + 86400)%86400)/3600;
         // load new graph index when timeslot changes
@@ -107,14 +149,26 @@ int main(int argc, char *argv[]){
             else if (!strcmp("-start", argv[argi])) { if (++argi >= argc) usage(); start_time = stod(argv[argi])*3600;}
             else if (!strcmp("-end", argv[argi])) { if (++argi >= argc) usage(); end_time = stod(argv[argi])*3600;}
             else if (!strcmp("-delta", argv[argi])) { if (++argi >= argc) usage(); delta_time = stod(argv[argi]);}
+            // Work4Food main
+            else if (!strcmp("-gpr_model", argv[argi])) { if (++argi >= argc) usage();  gp_model_path = argv[argi];}
+            else if (!strcmp("-minwork", argv[argi])) { if (++argi >= argc) usage();  MIN_WAGE_PER_SECOND = stod(argv[argi]);}
+            else if (!strcmp("-minwork_discount", argv[argi])) { if (++argi >= argc) usage();  MIN_WAGE_DISCOUNT_FACTOR = stod(argv[argi]);}
+            else if (!strcmp("-guarantee_type", argv[argi])) { if (++argi >= argc) usage();  GUARANTEE_TYPE = argv[argi];}
+            else if (!strcmp("-reject_drivers", argv[argi])) { if (++argi >= argc) usage();  REJECT_DRIVERS = true;}
         else usage();
         }
         else break;
     }
     if (argi != argc) usage();
 
-    string inp_conf = "results/" + simulation_city + "/config";
+    // Work4Food main
+    if(REJECT_DRIVERS)
+        GP_NUM_FEATURES = 11;
+
+    string inp_conf = "../../results/" + simulation_city + "/config";
+    cout<<"Reading input configuration"<<endl; //AR
     global_conf.read_from_file(inp_conf);
+    cout<<"Reading graph input"<<endl; //AR
     read_graph_input();
     cout << "Finish taking graph input" << endl;
     read_food_data();

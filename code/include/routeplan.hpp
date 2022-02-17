@@ -22,6 +22,9 @@ double get_route_plan_total_delivery_time(unordered_map<string, double> &deliver
 // returns the delivered times of orders in the routeplan if vehicle follows it
 unordered_map<string, double> get_delivered_times(vehicle &vh, vector<event> &route_plan, double curr_time);
 
+// Calculates the travel and wait times for a vehicle following the route plan
+pair<double, double> get_travel_and_wait_times_AR(vehicle &vh, vector<event> &route_plan, double curr_time);
+
 // Given a vehicle object and a route plan,
 // returns if capacity constraint is satisfied while following the route plan
 bool check_capacity_constraint(vehicle &vh, vector<event> &route_plan);

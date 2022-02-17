@@ -51,6 +51,9 @@ public:
     // whether vehicle is currently online
     bool ONLINE;
 
+    //for driver rejection based on minimumwage
+	double not_available_until;
+
     // current number of items with vehicle
     long long int curr_load;
 
@@ -76,6 +79,10 @@ public:
 	double travel_time_AR; 
     double active_time_AR;
 
+    //------ code for rating
+	int rating;
+    //------ code for rating
+
     vehicle();
 
     vehicle(string v_id, long long int m_load, vector<active_interval> de_int);
@@ -100,6 +107,9 @@ public:
 
     // Return start_node of active interval if DE is active else -1
     long long int is_active(double curr_time);
+
+    // Return the active slot/shift number 
+	int current_active_shift_AR(double curr_time);
 
     // Bring an offline vehicle online at curr_node
     void make_online(long long int c_node);

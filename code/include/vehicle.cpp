@@ -6,6 +6,7 @@
 #include "routeplan.hpp"
 #include "graph_util.hpp"
 #include "constants.hpp"
+#include "gaussian_process.hpp"
 
 using namespace std;
 
@@ -28,11 +29,16 @@ vehicle::vehicle(string v_id, long long int m_load, vector<active_interval> de_i
     this->de_intervals = de_int;
     this->e_d = (this->de_intervals)[0].start_time;
     this->ONLINE = false;
+    this->not_available_until = -1;
 
     cout<<"INITIALIZED_VEHICLE_TIMES_AR"<<endl;
     wait_time_AR = 0.0;
     travel_time_AR = 0.0;
     active_time_AR = 0.0;
+
+    //------ code for rating
+    this->rating  = int((5.0 * rand())/RAND_MAX) + 1;
+    //------ code for rating
 
     
 }
@@ -245,10 +251,49 @@ string vehicle::route_plan_str(){
 }
 
 long long int vehicle::is_active(double curr_time){
+    if(curr_time < this->not_available_until + FP_EPSILON)
+        return -1;
+    int shift = 0;
+    for(int i = 0; i < int((this->de_intervals).size()); i++){
+        active_interval de_int = (this->de_intervals)[i];
+        if (de_int.start_time - FP_EPSILON < curr_time && de_int.end_time + FP_EPSILON > curr_time){
+            // cout<<"OLD ACTIVE "<<this->vehicle_id<<" "<<de_int.start_time<<" "<<this->not_available_until<<endl;
+            if ((!(this->ONLINE)) && REJECT_DRIVERS){
+                cout<<"FIRST_CHECK_IS_ACTIVE,"<<this->vehicle_id<<","<<de_int.start_time<<","<<de_int.end_time<<","<<curr_time<<","<<shift;
+                // cout<<"IS_ACTIVE GP 1"<<endl;
+                GP_input vh_gpi = GP_input(curr_time, *this, de_int.start_node);
+                // cout<<"IS_ACTIVE GP 2"<<endl;
+                auto torch_options = torch::TensorOptions().dtype(torch::kFloat32);
+                vector<torch::jit::IValue> gp_tensor_input = { torch::from_blob(vh_gpi.input.data(), /*shape=*/{1, GP_NUM_FEATURES}, torch_options) };
+		        // cout<<"IS_ACTIVE GP 3"<<endl;
+                auto raw_output = gp_model.forward(gp_tensor_input);
+                // cout<<"IS_ACTIVE GP 4"<<endl;
+		        at::Tensor temp_output = raw_output.toTuple()->elements()[0].toTensor();                        
+		        std::vector<float> temp_vec(temp_output.data_ptr<float>(), temp_output.data_ptr<float>() + temp_output.numel());
+		        float gp_output = temp_vec[0];
+                double gp_mean = gp_model_parameters.first[GP_NUM_FEATURES], gp_std = gp_model_parameters.second[GP_NUM_FEATURES];
+                gp_output = gp_output*gp_std + gp_mean;
+                cout<<","<<gp_output;
+                // cout<<"ACTIVE_DURATION,"<<(de_int.end_time - de_int.start_time);
+                cout<<","<<gp_output/(de_int.end_time - de_int.start_time)<<endl;
+                if(gp_output/(de_int.end_time - de_int.start_time) < MIN_WAGE_PER_SECOND){
+                    this->not_available_until = de_int.end_time;
+                    cout<<"MARKED UNAVAILABLE"<<","<<this->vehicle_id<<","<<shift<<","<<this->not_available_until<<endl;
+                    return -1;
+                }
+            }
+            return de_int.start_node;
+        }
+        shift ++;
+    }
+    return -1;
+}
+
+int vehicle::current_active_shift_AR(double curr_time){
     for(int i = 0; i < int((this->de_intervals).size()); i++){
         active_interval de_int = (this->de_intervals)[i];
         if (de_int.start_time - FP_EPSILON < curr_time && de_int.end_time + FP_EPSILON > curr_time)
-            return de_int.start_node;
+            return i;
     }
     return -1;
 }

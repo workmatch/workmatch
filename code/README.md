@@ -1,6 +1,7 @@
 ## Installation
 
 1. Obtain the anonymized data from "https://bit.ly/3HGdavB" and keep the data according to the following directory structure:
+
 ```
 .
 ├─data
@@ -14,71 +15,110 @@
 ├─────food_data
 ├─────map
 ├─results
-└─scripts
+├─scripts
+├─gpr_models
+├─pytorch-cpp
+├───build
+├───CMakeLists.txt
 ```
 
 2. Generate the index structures for road networks:
-    We use the Hierarchical Hub Labeling code from the following repository [savrus/hl](https://github.com/savrus/hl).  
+   We use the Hierarchical Hub Labeling code from the following repository [savrus/hl](https://github.com/savrus/hl).  
+
 ```bash
     bash scripts/generate_index.sh
 ```
-3. Compile the project:
+
+3. Compile the project with CMake to use pytorch with C++:
+Refer: https://pytorch.org/cppdocs/installing.html#:~:text=mkdir%20build%0Acd%20build%0Acmake%20%2DDCMAKE_PREFIX_PATH%3D/absolute/path/to/libtorch%20..%0Acmake%20%2D%2Dbuild%20.%20%2D%2Dconfig%20Release
+or 
+https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
+
 ```bash
-    make main.o
+    cd code/pytorch-cpp/build/
+    pip install torch
+    export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
+    cmake -DCMAKE_PREFIX_PATH=`python -c 'import torch;print(torch.utils.cmake_prefix_path)'` ..
+    make 
 ```
 
 ## Running the code
 
 1. Simulation:  
-    - Usage
-    ```bash
-        ./main.o [-algo algorithm_name] [-city city_name] [-day day_num] [-eta eta_num] [-k k_num] [-gamma gamma_num] [-delta delta_num] [-start start_num] [-end end_num]
-    ```
-    - The parameters are explained below:
-        - **algorithm_name**: Name of assigment algorithm to use \[Default: FAIR_FOODY\]  
-        ```
-        'FAIR_FOODY' = FairFoody implementation
-        'FM_FULL' = FoodMatch implimentation proposed by Jhoshi et. al. [1], we have reused code provided by [3] in our implementation.
-        'WORK4FOOD' = Work4Food implementation
-        ```
-        - **city_name**: Name of city to run algorithm on \[Default: A\]  
-        ```
-        '{A, B, C}'
-        ```
-        - **day_num**: Day for which the algorithm should be run on \[Default: 1\]
-        ```
-        '{1,2,3,4,5,6}'
-        ```
-        - **eta_num**: Eta value used in stopping criteria for clustering \[Default: 60\]
-        - **k_num**: K value used in fraction of edges to use in BFS \[Default: 200\]
-        - **gamma_num**: Gamma value used in weight of heuristic function \[Default: 0.5\]
-        - **delta_num**: Accumulation window used \[Default: 180\]
-        - **start_num**: Start hour of simulation in 24-hour format \[Default: 0\]
-        - **end_num**: End hour of simulation in 24-hour format \[Default: 24\]
-    - Sample command:
-    ```bash
-        ./main.o -algo FAIR_FOODY -city A -day 1 -eta 60 -k 200 -gamma 0.5 -delta 180 -start 0 -end 24 > sim.results
-    ```
+
+   - Usage
+
+   ```bash
+       cd code/pytorch-cpp/build/
+       ./main [-algo algorithm_name] [-city city_name] [-day day_num] [-eta eta_num] [-k k_num] [-gamma gamma_num] [-delta delta_num] [-start start_num] [-end end_num] [-gpr_model gpr_model_path] [-minwork minwork_guarantee] [-guarantee_type guarantee_type_name] [-reject_drivers reject_drivers_set]
+   ```
+
+   - The parameters are explained below:
+
+     - **algorithm_name**: Name of assigment algorithm to use \[Default: FAIR_FOODY\]  
+
+     ```
+     'FAIR_FOODY' = FairFoody implementation
+     'FM_FULL' = FoodMatch implimentation proposed by Jhoshi et. al. [1], we have reused code provided by [3] in our implementation.
+     'WORK4FOOD' = Work4Food implementation
+     ```
+
+     - **city_name**: Name of city to run algorithm on \[Default: A\]  
+
+     ```
+     '{A, B, C}'
+     ```
+
+     - **day_num**: Day for which the algorithm should be run on \[Default: 1\]
+
+     ```
+     '{1,2,3,4,5,6}'
+     ```
+
+     - **eta_num**: Eta value used in stopping criteria for clustering \[Default: 60\]
+     - **k_num**: K value used in fraction of edges to use in BFS \[Default: 200\]
+     - **gamma_num**: Gamma value used in weight of heuristic function \[Default: 0.5\]
+     - **delta_num**: Accumulation window used \[Default: 180\]
+     - **start_num**: Start hour of simulation in 24-hour format \[Default: 0\]
+     - **end_num**: End hour of simulation in 24-hour format \[Default: 24\]
+
+     - **gpr_model_path**: Path to the GPR model to be used w/o the .pth or .pt extension\[Default: ""\]
+     - **minwork_guarantee**: Minimum work guarantee in terms of work guarantee ratio between 0 and 1 \[Default: 0.25\]
+     - **guarantee_type_name**: Type of work guarantee 'static'(same for all agents), 'dynamic_gp'(dynamic based on gpr) or 'rating'(based on agent ratings) \[Default: static\]
+     - **reject_drivers_set**: If this flag used then driver rejection is set on irrespective of what follows the flag \[Default: false\]
+     
+
+   - Sample command:
+
+   ```bash
+       ./main -algo FAIR_FOODY -city A -day 1 -eta 60 -k 200 -gamma 0.5 -delta 180 -start 0 -end 24 > results/sim.results
+       ./main -algo WORK4FOOD -city A -day 1 -eta 60 -k 200 -gamma 0.5 -delta 180 -start 0 -end 24 -gpr_model ../../gpr_models/model_A_days_2_and_5_25_1_0_100_frac_pay_2 > results/sim.results
+   ```
 
 2. Evaluation:  
-    - Usage  
-    ```bash
-    python3 scripts/evaluation_script.py [--input_file simulation_log] [--output_file output_file] [--start start_num] [--end end_num] [--delta delta_num] 
-    ```
-    - The parameters are explained below:
-        - **simulation_log**: Simulation log generated by `main.o` \[Required\]
-        - **output_file**: File to which metrics are written \[Required\]
-        - **start_num**: Start hour of simulation in 24-hour format \[Required\]
-        - **end_num**: End hour of simulation in 24-hour format \[Required\]
-        - **delta_num**: Accumulation window used \[Required\]
-    - Sample command:
+
+   - Usage  
+
+   ```bash
+   python3 scripts/evaluation_script.py [--input_file simulation_log] [--output_file output_file] [--start start_num] [--end end_num] [--delta delta_num] 
+   ```
+
+   - The parameters are explained below:
+     - **simulation_log**: Simulation log generated by `main.o` \[Required\]
+     - **output_file**: File to which metrics are written \[Required\]
+     - **start_num**: Start hour of simulation in 24-hour format \[Required\]
+     - **end_num**: End hour of simulation in 24-hour format \[Required\]
+     - **delta_num**: Accumulation window used \[Required\]
+   - Sample command:
+
 ```bash
         python3 scripts/evaluation_script.py --input_file sim.results --output_file metrics.results --start 0 --end 24 --delta 180 
 ```
 
 ## Code Description
+
 - `main.cpp` - contains the code that drives the simulation.<br>
-    It produces a log of simulation on stdout. This is piped to a file for evaluation.
+  It produces a log of simulation on stdout. This is piped to a file for evaluation.
 - `include/` - contains code for the simulation framework and algorithms.
 - `include/constants.cpp` - contains the default parameters used.
 - `include/vehicle_assignment.cpp` - contains the code for FairFoody,FoodMatch and 2SF algorithms.
@@ -90,4 +130,3 @@
 [2] Anjali and Rahul Yadav and Ashish Nair and Abhijnan Chkraborty and Sayan Ranu and Amitabha Bagchi, "FairFoody: Bringing in Fairness in Food Delivery," inProc. AAAI, 2022.<br>
 [3] https://github.com/idea-iitd/FoodMatch<br>
 [4] https://github.com/idea-iitd/fairfoody<br>
-

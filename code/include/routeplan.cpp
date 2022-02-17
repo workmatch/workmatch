@@ -93,6 +93,52 @@ unordered_map<string, double> get_delivered_times(vehicle &vh, vector<event> &ro
     return delivered_time;
 }
 
+// Given vehicle object, route plan to follow and current time(UNIX timestamp in sec)
+// returns travel and wait times(UNIX timestamp) of the orders in route_plan
+pair<double, double> get_travel_and_wait_times_AR(vehicle &vh, vector<event> &route_plan, double curr_time){
+
+	double global_time = curr_time;
+	double travel_time = 0, wait_time = 0;
+	long long int curr_node = vh.get_current_location();
+	// If in middle of an edge, complete the edge
+	if (vh.fraction_last_edge > 0.1){
+		long long int u = vh.path[vh.path_present_idx];
+        long long int v = vh.path[vh.path_present_idx + 1];
+		int curr_timeslot = ((((long long int)(curr_time))%86400 + 86400)%86400)/3600;
+		
+		double edge_length = get_edge_weight(u, v, curr_timeslot);
+
+        global_time = curr_time + (1 - vh.fraction_last_edge)*edge_length;
+		travel_time += (1 - vh.fraction_last_edge)*edge_length;
+        curr_node = vh.path[vh.path_present_idx + 1];
+	}
+
+	for (int i = 0; i < int(route_plan.size()); i++){
+		order event_order = route_plan[i].order_obj;
+
+		double time_taken = hhl_sp_query(curr_node, route_plan[i].node);
+		if (time_taken + FP_EPSILON >= MAX_NUM){
+			// if any two event nodes in route plan were not reachable, return empty delivered times 
+			return {};
+		}
+
+		global_time += time_taken;
+		travel_time += time_taken;
+
+		// Pick Up
+		if (route_plan[i].type == 0){
+			double food_prep_time = event_order.order_time + event_order.prep_time;
+			wait_time += max(0.0, food_prep_time - global_time);
+            global_time = max(global_time, food_prep_time);
+		}
+		
+		curr_node = route_plan[i].node;
+	}
+	
+	
+	return {travel_time, wait_time};
+}
+
 double get_route_plan_extra_delivery_time(unordered_map<string, double> &delivered_time, vector<event> &route_plan){
     double extra_delivery_time = 0;
     for (int i = 0; i < int(route_plan.size()); i++){

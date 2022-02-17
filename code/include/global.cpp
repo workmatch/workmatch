@@ -28,3 +28,8 @@ vector<vehicle> all_vehicles;
 config global_conf;
 
 unordered_map<long long int, double> time_opt;
+
+// Work4Food global
+unordered_map<string,unordered_map<int,float>> wage_guarantee;
+int n_drivers_window = 0;
+int n_orders_window = 0;

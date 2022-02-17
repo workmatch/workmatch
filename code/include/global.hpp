@@ -46,3 +46,9 @@ extern vector<vehicle> all_vehicles;
 extern config global_conf;
 
 extern unordered_map<long long int, double> time_opt;
+
+
+// Work4Food global
+extern unordered_map<string,unordered_map<int,float>> wage_guarantee;
+extern int n_drivers_window;
+extern int n_orders_window;
