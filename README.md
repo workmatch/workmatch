@@ -17,7 +17,6 @@ Setup a conda environment which includes packages required to run evaluation scr
 
 ```bash
 conda env create -f environment.yml
-conda activate ff_evn
 ```
 
 ### Datasets and evaluation procedure
