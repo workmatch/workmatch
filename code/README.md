@@ -146,6 +146,7 @@
 - `include/` - contains code for the simulation framework and algorithms.
 - `include/constants.cpp` - contains the default parameters used.
 - `include/vehicle_assignment.cpp` - contains the code for FairFoody,FoodMatch and Work4Food algorithms.
+- `gpr_training/work_predict.py` - contains the GPR training code used in our paper.
 - `scripts/evaluation_script.py` - reads the simulation log and reports metrics defined in our paper.
 
 ## References

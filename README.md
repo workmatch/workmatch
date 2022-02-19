@@ -8,7 +8,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-The algorithms are implemented in C++11 (GCC 7.4.0) and evaluation scripts are implemented in Python 3 (Python 3.6)
+The algorithms are implemented in C++11 (GCC 7.4.0), and GPR training and evaluation scripts are implemented in Python 3 (Python 3.6)
 
 ### Installation
 
