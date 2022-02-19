@@ -16,9 +16,11 @@ Setup a conda environment which includes packages required to run evaluation scr
 
 ```bash
 conda env create -f environment.yml
+conda activate w4f_evn
 ```
 
 ### Datasets and evaluation procedure
+
 The code for simulation and algorithms defined in our paper is provided in [./code]. An anonymized version of the proprietary dataset is available at "https://drive.google.com/drive/folders/17e6ZXzD8e9lAdnBEL8aT09MLJDrv1Yh8?usp=sharing" or "https://bit.ly/3HGdavB".
 
 

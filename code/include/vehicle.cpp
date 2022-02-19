@@ -167,7 +167,9 @@ bool vehicle::move(double curr_time, double next_time){
                 // Haversine used because of straight edge
                 double dist = node_haversine(u, v) * (time_left/time_to_next_node);
                 cout << "MOVE,"<< this->vehicle_id << "," << (this->route_plan)[0].order_obj.order_id << ",";
-                cout << next_time - time_left << "," << dist << "," << carry_orders << "," <<  time_left << "," << (this->route_plan)[0].type << endl;
+                cout << next_time - time_left << "," << dist << "," << carry_orders << "," <<  time_left << "," << (this->route_plan)[0].type;
+                cout<< "," << nodes_to_latlon[this->path[this->path_present_idx]].first << "," << nodes_to_latlon[this->path[this->path_present_idx]].second;
+                cout << endl;
             }
             
             //------ code for fairness
@@ -183,7 +185,9 @@ bool vehicle::move(double curr_time, double next_time){
                 double dist = node_haversine(u, v) * (1 - this->fraction_last_edge);
                 cout << "MOVE,"<< this->vehicle_id << "," << (this->route_plan)[0].order_obj.order_id << ",";
                 cout << next_time - time_left << "," << dist << "," << carry_orders << ",";
-                cout <<  time_to_next_node * (1 - this->fraction_last_edge) << "," << (this->route_plan)[0].type  << endl;
+                cout <<  time_to_next_node * (1 - this->fraction_last_edge) << "," << (this->route_plan)[0].type;
+                cout<< "," << nodes_to_latlon[this->path[this->path_present_idx]].first << "," << nodes_to_latlon[this->path[this->path_present_idx]].second;
+                cout << endl;
             }
             
             //------ code for fairness

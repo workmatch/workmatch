@@ -16,6 +16,7 @@
 ├─────map
 ├─results
 ├─scripts
+├─gpr_training
 ├─gpr_models
 ├─pytorch-cpp
 ├───build
@@ -29,17 +30,23 @@
     bash scripts/generate_index.sh
 ```
 
-3. Compile the project with CMake to use pytorch with C++:
-Refer: https://pytorch.org/cppdocs/installing.html#:~:text=mkdir%20build%0Acd%20build%0Acmake%20%2DDCMAKE_PREFIX_PATH%3D/absolute/path/to/libtorch%20..%0Acmake%20%2D%2Dbuild%20.%20%2D%2Dconfig%20Release
-or 
-https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
+3. Compile the project with CMake to link pytorch with C++, a Makefile will get created at ```code/pytorch-cpp/build/```:
+
+    Refer: https://pytorch.org/cppdocs/installing.html#:~:text=mkdir%20build%0Acd%20build%0Acmake%20%2DDCMAKE_PREFIX_PATH%3D/absolute/path/to/libtorch%20..%0Acmake%20%2D%2Dbuild%20.%20%2D%2Dconfig%20Release
+    or 
+    https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
 
 ```bash
     cd code/pytorch-cpp/build/
     pip install torch
-    export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
     cmake -DCMAKE_PREFIX_PATH=`python -c 'import torch;print(torch.utils.cmake_prefix_path)'` ..
     make 
+```
+
+4. Install GPyTorch
+
+```bash
+    pip install gpytorch
 ```
 
 ## Running the code
@@ -50,7 +57,7 @@ https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
 
    ```bash
        cd code/pytorch-cpp/build/
-       ./main [-algo algorithm_name] [-city city_name] [-day day_num] [-eta eta_num] [-k k_num] [-gamma gamma_num] [-delta delta_num] [-start start_num] [-end end_num] [-gpr_model gpr_model_path] [-minwork minwork_guarantee] [-guarantee_type guarantee_type_name] [-reject_drivers reject_drivers_set]
+       ./main [-algo algorithm_name] [-city city_name] [-day day_num] [-eta eta_num] [-k k_num] [-gamma gamma_num] [-delta delta_num] [-start start_num] [-end end_num] [-gpr_model gpr_model_path] [-minwork minwork_guarantee] [-guarantee_type guarantee_type_name] [-reject_drivers]
    ```
 
    - The parameters are explained below:
@@ -85,9 +92,8 @@ https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
      - **gpr_model_path**: Path to the GPR model to be used w/o the .pth or .pt extension\[Default: ""\]
      - **minwork_guarantee**: Minimum work guarantee in terms of work guarantee ratio between 0 and 1 \[Default: 0.25\]
      - **guarantee_type_name**: Type of work guarantee 'static'(same for all agents), 'dynamic_gp'(dynamic based on gpr) or 'rating'(based on agent ratings) \[Default: static\]
-     - **reject_drivers_set**: If this flag used then driver rejection is set on irrespective of what follows the flag \[Default: false\]
+     - **-reject_drivers**: If this flag used then driver rejection is set on \[Default: false\]
      
-
    - Sample command:
 
    ```bash
@@ -95,7 +101,24 @@ https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
        ./main -algo WORK4FOOD -city A -day 1 -eta 60 -k 200 -gamma 0.5 -delta 180 -start 0 -end 24 -gpr_model ../../gpr_models/model_A_days_2_and_5_25_1_0_100_frac_pay_2 > results/sim.results
    ```
 
-2. Evaluation:  
+2. GPR Training: 
+
+   - Usage  
+
+   ```bash
+   python3 gpr_training/work_predict.py [--city city_name]  
+   ``` 
+
+   - The parameters are explained below:
+     - **city_name**: A, B or C \[Required\]
+  
+  - Sample command:
+
+    ```bash
+    python3 gpr_training/work_predict.py A
+    ```
+
+3. Evaluation:  
 
    - Usage  
 
@@ -109,11 +132,12 @@ https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
      - **start_num**: Start hour of simulation in 24-hour format \[Required\]
      - **end_num**: End hour of simulation in 24-hour format \[Required\]
      - **delta_num**: Accumulation window used \[Required\]
+
    - Sample command:
 
-```bash
-        python3 scripts/evaluation_script.py --input_file sim.results --output_file metrics.results --start 0 --end 24 --delta 180 
-```
+    ```bash
+            python3 scripts/evaluation_script.py --input_file sim.results --output_file metrics.results --start 0 --end 24 --delta 180 
+    ```
 
 ## Code Description
 
@@ -121,8 +145,8 @@ https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
   It produces a log of simulation on stdout. This is piped to a file for evaluation.
 - `include/` - contains code for the simulation framework and algorithms.
 - `include/constants.cpp` - contains the default parameters used.
-- `include/vehicle_assignment.cpp` - contains the code for FairFoody,FoodMatch and 2SF algorithms.
-- `evaluation_scripts/evaluation_script.py` - reads the simulation log and reports metrics defined in our paper.
+- `include/vehicle_assignment.cpp` - contains the code for FairFoody,FoodMatch and Work4Food algorithms.
+- `scripts/evaluation_script.py` - reads the simulation log and reports metrics defined in our paper.
 
 ## References
 

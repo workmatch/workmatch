@@ -90,7 +90,7 @@ void simulation(){
         else if (assignment_algorithm == "FM_BFS"){
             foodmatch_BFS(active_vehicles, active_orders, global_time, rejected_orders);
         }
-        else if (assignment_algorithm == "FM_FULL"){
+        else if (assignment_algorithm == "FM_FULL" || assignment_algorithm == "FOOD_MATCH" ){
             foodmatch_FULL(active_vehicles, active_orders, global_time, rejected_orders);
         }
         else if (assignment_algorithm == "WORK4FOOD"){
@@ -121,7 +121,7 @@ void simulation(){
 }
 
 void usage() {
-    cout << "Usage: ./main.o [-algo name] [-k num] [-cpf num] [-gamma num] [-eta num] [-day num] [-city num] [-delta num] [-start num] [-end num]" << endl
+    cout << "Usage: ./main.o [-algo name] [-k num] [-cpf num] [-gamma num] [-eta num] [-day num] [-city num] [-delta num] [-start num] [-end num] [-gpr_model string] [-minwork fraction] [-guarantee_type string] [-reject_drivers]" << endl
               << "  -algo algo_name         \tAlgorithm name" << endl
               << "  -k num                  \tK value" << endl
               << "  -gamma num              \tGamma value" << endl
@@ -130,7 +130,12 @@ void usage() {
               << "  -city name              \tCity name" << endl
               << "  -delta num              \tAccumulation window" << endl
               << "  -start num              \tStart time" << endl
-              << "  -end num                \tEnd time" << endl;
+              << "  -end num                \tEnd time" << endl
+              << "  -de_frac                \tDriver fraction" << endl
+              << "  -gpr_model              \tGPR model path" << endl
+              << "  -minwork                \tFixed minimum work guarantee for all agents (g)" << endl
+              << "  -guarantee_type         \tGuarantee type of W4F" << endl
+              << "  -reject_drivers         \tEnable driver rejection if this label is used" << endl;
     exit(1);
 }
 
@@ -149,12 +154,13 @@ int main(int argc, char *argv[]){
             else if (!strcmp("-start", argv[argi])) { if (++argi >= argc) usage(); start_time = stod(argv[argi])*3600;}
             else if (!strcmp("-end", argv[argi])) { if (++argi >= argc) usage(); end_time = stod(argv[argi])*3600;}
             else if (!strcmp("-delta", argv[argi])) { if (++argi >= argc) usage(); delta_time = stod(argv[argi]);}
+            else if (!strcmp("-de_frac", argv[argi])) { if (++argi >= argc) usage(); fraction_drivers = stod(argv[argi]);}
             // Work4Food main
             else if (!strcmp("-gpr_model", argv[argi])) { if (++argi >= argc) usage();  gp_model_path = argv[argi];}
             else if (!strcmp("-minwork", argv[argi])) { if (++argi >= argc) usage();  MIN_WAGE_PER_SECOND = stod(argv[argi]);}
             else if (!strcmp("-minwork_discount", argv[argi])) { if (++argi >= argc) usage();  MIN_WAGE_DISCOUNT_FACTOR = stod(argv[argi]);}
             else if (!strcmp("-guarantee_type", argv[argi])) { if (++argi >= argc) usage();  GUARANTEE_TYPE = argv[argi];}
-            else if (!strcmp("-reject_drivers", argv[argi])) { if (++argi >= argc) usage();  REJECT_DRIVERS = true;}
+            else if (!strcmp("-reject_drivers", argv[argi])) { REJECT_DRIVERS = true;}
         else usage();
         }
         else break;
