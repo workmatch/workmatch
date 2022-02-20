@@ -36,7 +36,7 @@ double get_edge_weight(long long int u, long long int v, int timeslot){
         dist + FP_EPSILON >= MAX_NUM){
             throw "SOME ERROR HERE\n";
         }
-    return dist/speed;
+    return (double)ceil(dist/speed); // Work4Food graph_util
 }
 
 double query_naive(int x, int y, double currtime){

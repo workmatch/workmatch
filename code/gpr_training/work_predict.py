@@ -31,14 +31,14 @@ city = sys.argv[1]
 
 dir = '../results/'
 data_csv_file_name = 'WORK4FOOD'
-# Result file name WORK4FOOD_0_24_static_25
+# Result file name WORK4FOOD_0_24_25_static
 
 
 # TODO
-# pay_guarantee_per_second_postfix = '_static_25_frac'
-# frac_drivers = ["100", "90", "80", "70", "60"]
-pay_guarantee_per_second_postfix = '_static_25'
-frac_drivers = [""]
+pay_guarantee_per_second_postfix = '_25_static_frac'
+frac_drivers = ["100", "90", "80", "70", "60"]
+# pay_guarantee_per_second_postfix = '_25_static'
+# frac_drivers = [""]
 
 # os.chdir(dir)
 
@@ -142,9 +142,9 @@ for day in days:
                 temp = data_move_grouped[int(v)]
               except:
                 continue
-              if (temp.curr_time >= 0).sum() == 0:
-                start_time -= (0 + 86400*(day-1))
-                stop_time -= (0 + 86400*(day-1))
+            #   if (temp.curr_time >= 0).sum() == 0:
+            #     start_time -= (0 + 86400*(day-1))
+            #     stop_time -= (0 + 86400*(day-1))
                 
               temp = temp[(temp.curr_time<stop_time) & (temp.curr_time>start_time)]
               
@@ -154,10 +154,10 @@ for day in days:
               temp['shift'] = n
               temp['start_time'] = start_time
               temp['stop_time'] = stop_time
-              if (temp.curr_time >= 0).sum() > 0:
-                temp['curr_time'] = temp['curr_time'] - (0 + 86400*(day-1))
-                temp['start_time'] = temp['start_time'] - (0 + 86400*(day-1))
-                temp['stop_time'] = temp['stop_time'] - (0 + 86400*(day-1))
+            #   if (temp.curr_time >= 0).sum() > 0:
+            #     temp['curr_time'] = temp['curr_time'] - (0 + 86400*(day-1))
+            #     temp['start_time'] = temp['start_time'] - (0 + 86400*(day-1))
+            #     temp['stop_time'] = temp['stop_time'] - (0 + 86400*(day-1))
               temp['distance_till_now'] = temp['dist_travelled'].cumsum()
               temp['travel_time_till_now'] = temp['time_travelled'].cumsum()
               temp['more_distance_till_shift_end'] = temp['distance_till_now'].iloc[-1] - temp['distance_till_now']
@@ -177,10 +177,6 @@ for day in days:
               temp2['shift'] = n
               temp2['start_time'] = start_time
               temp2['stop_time'] = stop_time
-              if (temp2.curr_time >= 0).sum() > 0:
-                temp2['curr_time'] = temp2['curr_time'] - (0 + 86400*(day-1))
-                temp2['start_time'] = temp2['start_time'] - (0 + 86400*(day-1))
-                temp2['stop_time'] = temp2['stop_time'] - (0 + 86400*(day-1))
               temp2['wait_time_till_now'] = temp2['wait_time'].cumsum()
               temp2['more_wait_time_till_shift_end'] = temp2['wait_time_till_now'].iloc[-1] - temp2['wait_time_till_now']
               temp2 = temp2.drop(columns = ['delivered_time', 'picked_time', 'reached_time', 'assigned_time', 'wait_time'])
