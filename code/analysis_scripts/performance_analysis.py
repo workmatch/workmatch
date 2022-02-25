@@ -3,12 +3,9 @@ import glob
 import time
 from datetime import datetime
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import PercentFormatter
 import os
 import statistics
 import sys
-import matplotlib
 
 city = sys.argv[1]
 day = (int)(sys.argv[2])
@@ -19,8 +16,6 @@ if(algo == "WORK4FOOD"):
     min_wage_per_second = sys.argv[4]
 else:
     min_wage_per_second = ''
-        
-min_wage_discount =  '_0'
 
 try:
     if int(min_wage_per_second[1:3]) == 0:
@@ -48,28 +43,28 @@ def gini(data, mwo):
         diffsum += np.sum(np.abs(xi - x[i:]))
     return diffsum / (len(x)**2 * np.mean(x))
 
-def lorenz(x):
-    arr = x.copy()
-    arr.sort()
-    # this divides the prefix sum by the total sum
-    # this ensures all the values are between 0 and 1.0
-    scaled_prefix_sum = arr.cumsum() / arr.sum()
-    # this prepends the 0 value (because 0% of all people have 0% of all wealth)
-    return np.insert(scaled_prefix_sum, 0, 0)
+# def lorenz(x):
+#     arr = x.copy()
+#     arr.sort()
+#     # this divides the prefix sum by the total sum
+#     # this ensures all the values are between 0 and 1.0
+#     scaled_prefix_sum = arr.cumsum() / arr.sum()
+#     # this prepends the 0 value (because 0% of all people have 0% of all wealth)
+#     return np.insert(scaled_prefix_sum, 0, 0)
 
-def lorenz_curve(X, X_label="", Y_label="", title=""): 
-    lorenz_curve = lorenz(X)
+# def lorenz_curve(X, X_label="", Y_label="", title=""): 
+#     lorenz_curve = lorenz(X)
 
-    # we need the X values to be between 0.0 to 1.0
-    plt.plot(np.linspace(0.0, 1.0, lorenz_curve.size), lorenz_curve)
-    # plot the straight line perfect equality curve
-    plt.plot([0,1], [0,1], color='k') #black
+#     # we need the X values to be between 0.0 to 1.0
+#     plt.plot(np.linspace(0.0, 1.0, lorenz_curve.size), lorenz_curve)
+#     # plot the straight line perfect equality curve
+#     plt.plot([0,1], [0,1], color='k') #black
     
-    plt.rc('xtick',labelsize=15)
-    plt.rc('ytick',labelsize=15)
-    plt.xlabel("Fraction of " + X_label, fontsize=15)
-    plt.ylabel("Fraction of " + Y_label, fontsize=15)
-    plt.title(title,fontsize = 20)
+#     plt.rc('xtick',labelsize=15)
+#     plt.rc('ytick',labelsize=15)
+#     plt.xlabel("Fraction of " + X_label, fontsize=15)
+#     plt.ylabel("Fraction of " + Y_label, fontsize=15)
+#     plt.title(title,fontsize = 20)
 
 
 st_hr, end_hr = 0,24
@@ -96,7 +91,6 @@ for i, filename in enumerate(csv_files):
     data = pd.read_csv(filename, names=["a", "b", "c", "d", "e", "f", "g", "h"])
 
     data_sdt = data[data['a'] == "SDT"].drop(['a', 'g', 'h'], axis = 1)
-    # print("data_sdt len", data_sdt.__len__())
     data_sdt.columns = ['order_id', 'sdt', 'ordered_time', 'prep_time', 'sla']
     data_sdt = data_sdt.set_index('order_id')
 
@@ -220,14 +214,11 @@ grouped_active_hours = df_active_hours_sliced.groupby(['DE_ID'], as_index=False)
 
 df_vehicle = pd.merge(df_vehicle_without_shifts, grouped_active_hours, left_on=['vehicle_id'], right_on = ['DE_ID'])
 
-if (min_wage_per_second=='_condyn') and (min_wage_per_second=='_dyn'):
-    df_active_hours_sliced['pay_guarantee_dyn'] = np.array(hourly_wage_guarantee)[df_active_hours_sliced['HOUR']] * df_active_hours_sliced['ACTIVE_MINUTE']
-    df_daily_dynamic_wage_guarantee = df_active_hours_sliced[['DE_ID', 'pay_guarantee_dyn', 'ACTIVE_MINUTE']].groupby('DE_ID').sum().reset_index()
-else: 
-    df_daily_dynamic_wage_guarantee = data_guarantee_all[['DE_ID', 'pay_guarantee_dyn']].groupby('DE_ID').sum().reset_index()
-    df_daily_dynamic_wage_guarantee = pd.merge(df_daily_dynamic_wage_guarantee, grouped_active_hours, on='DE_ID', how='outer')
-    df_daily_dynamic_wage_guarantee['pay_guarantee_dyn'] /= 60
-    df_daily_dynamic_wage_guarantee['pay_guarantee_dyn'] = df_daily_dynamic_wage_guarantee['pay_guarantee_dyn'].fillna(0)
+
+df_daily_dynamic_wage_guarantee = data_guarantee_all[['DE_ID', 'pay_guarantee_dyn']].groupby('DE_ID').sum().reset_index()
+df_daily_dynamic_wage_guarantee = pd.merge(df_daily_dynamic_wage_guarantee, grouped_active_hours, on='DE_ID', how='outer')
+df_daily_dynamic_wage_guarantee['pay_guarantee_dyn'] /= 60
+df_daily_dynamic_wage_guarantee['pay_guarantee_dyn'] = df_daily_dynamic_wage_guarantee['pay_guarantee_dyn'].fillna(0)
  
 del df_vehicle['ACTIVE_MINUTE']
 
@@ -283,7 +274,7 @@ orders_delivered_45min = df_order[df_order['order_delivered_time']/60 < 45]['ord
 total_working_time = df_active_hours_sliced.ACTIVE_MINUTE.sum()
 
 orders_assigned = df_order['order_id'].nunique()
-print("orders_assigned", orders_assigned)
+# print("orders_assigned", orders_assigned)
 total_delivery_time = sum(df_order['order_delivered_time']/60)
 total_payment = sum(df_vehicle['pay'])
 total_payment_above_minwage_dyn = df_vehicle[f'pay_above_minwage_dyn'].sum()
@@ -324,12 +315,9 @@ excess = (abs(ppahd - mwo/100) + (ppahd - mwo/100))/2
 
 work_for_guarantee = ppahd - excess
 gini_work_for_guaranteed_pay = gini(work_for_guarantee, 0)
-# print('gini_work_for_guaranteed_pay:', mwo, gini_work_for_guaranteed_pay)
-
 
 pay_per_worked_hour = (mwo + excess)/ppahd
 gini_pay_per_worked_hour = gini(pay_per_worked_hour, 0)
-# print('gini_pay_per_worked_hour:', mwo, gini_pay_per_worked_hour)
 
 result = "algo," + str(algo) + "\n" 
 result += "min_wage_per_second," + str(min_wage_per_second) + "\n" 
@@ -340,7 +328,6 @@ result+= "orders_assigned," + str(orders_assigned) + "\n"
 result+= "total_drivers," + f"{total_drivers:.0f}" + "\n" 
 result+= "total_active_time," + f"{total_active_time:.0f}" + "\n" 
 result+= "total_payment," + f"{total_payment:.0f}" + "\n" 
-# result+= "total_travel_payment " + f"{total_travel_payment:.0f}" + "\n" 
 result+= f"total_payment_above_minwage_mwo_dyn," + f"{total_payment_above_minwage_dyn:.0f}" + "\n"
 result+= f"total_payment_below_minwage_mwo_dyn," + f"{total_payment_below_minwage_dyn:.0f}" + "\n"
 result+= f"total_pay_guarantee_mwo_dyn," + f"{total_pay_guarantee_mwo_dyn:.0f}" + "\n" 

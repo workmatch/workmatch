@@ -18,6 +18,10 @@
 ├─scripts
 ├─gpr_training
 ├─gpr_models
+├─analysis_scripts
+├─analysis_results
+├─include
+├─main.cpp
 ├─pytorch-cpp
 ├───build
 ├───CMakeLists.txt
@@ -30,14 +34,14 @@
     bash scripts/generate_index.sh
 ```
 
-3. Compile the project with CMake to link pytorch with C++, a Makefile will get created at ```code/pytorch-cpp/build/```:
+3. Compile the project with CMake to link pytorch with C++, a Makefile will get created at ```pytorch-cpp/build/```:
 
     Refer: https://pytorch.org/cppdocs/installing.html#:~:text=mkdir%20build%0Acd%20build%0Acmake%20%2DDCMAKE_PREFIX_PATH%3D/absolute/path/to/libtorch%20..%0Acmake%20%2D%2Dbuild%20.%20%2D%2Dconfig%20Release
     or 
     https://gist.github.com/mhubii/1c1049fb5043b8be262259efac4b89d5
 
 ```bash
-    cd code/pytorch-cpp/build/
+    cd pytorch-cpp/build/
     pip install torch
     cmake -DCMAKE_PREFIX_PATH=`python -c 'import torch;print(torch.utils.cmake_prefix_path)'` ..
     make 
@@ -55,7 +59,7 @@
 
    - Usage:
    ```bash
-       cd code/pytorch-cpp/build/
+       cd pytorch-cpp/build/
        ./main [-algo algorithm_name] [-city city_name] [-day day_num] [-eta eta_num] [-k k_num] [-gamma gamma_num] [-delta delta_num] [-start start_num] [-end end_num] [-de_frac fraction_agents] [-gpr_model gpr_model_path] [-minwork minwork_guarantee] [-guarantee_type guarantee_type_name] [-reject_drivers]
    ```
 
@@ -64,7 +68,7 @@
      ```
      'WORK4FOOD' = Work4Food implementation.
      'FOOD_MATCH' = FoodMatch implimentation proposed by Jhoshi et. al. [1], we have reused code provided by [3] in our implementation.
-     'FAIR_FOODY' = FairFoody implementation proposed by Anjali et. al. [2],  we have reused code provided by [4] in our implementation.
+     'FAIR_FOODY' = FairFoody implementation proposed by Anjali et. al. [2], we have reused code provided by [4] in our implementation.
      ```
      - **city_name**: Name of city to run algorithm on \[Default: A\]  
      ```
@@ -81,20 +85,20 @@
      - **start_num**: Start hour of simulation in 24-hour format \[Default: 0\]
      - **end_num**: End hour of simulation in 24-hour format \[Default: 24\]
      - **fraction_agents**: The fraction of agents from the dataset to be used as available agents \[Default: 1.0\]
-     - **gpr_model_path**: Path to the GPR model to be used w/o the .pth or .pt extension\[Default: ""\]
+     - **gpr_model_path**: Path to the GPR model to be used w/o the .pth or .pt extension \[Default: ""\]
      - **minwork_guarantee**: Minimum work guarantee in terms of work guarantee ratio between 0 and 1 \[Default: 0.25\]
-     - **guarantee_type_name**: Type of work guarantee 'static'(same for all agents), 'dynamic_gp'(dynamic based on gpr) or 'rating'(based on agent ratings) \[Default: static\]
+     - **guarantee_type_name**: Type of work guarantee 'static'(same for all agents), 'dynamic_gp'(dynamic based on GPR) or 'rating'(based on agent ratings) \[Default: static\]
      - **-reject_drivers**: If this flag used then driver rejection is set on \[Default: false\]
      
    - Sample command:
    ```bash
-       cd code/pytorch-cpp/build/
+       cd pytorch-cpp/build/
        ./main -algo FAIR_FOODY -city A -day 1 -eta 60 -k 200 -gamma 0.5 -delta 180 -start 0 -end 24 > ../../results/A/1/FAIR_FOODY_0_24.results 
        ./main -algo WORK4FOOD -city A -day 1 -eta 60 -k 200 -gamma 0.5 -delta 180 -start 0 -end 24 -gpr_model ../../gpr_models/model_A_days_2_and_5_25_static_pay_2 > ../../results/A/1/WORK4FOOD_0_24_25_static
    ```
-   Note that the logs should be saved in file  ./../results/{city_name}/{day_num}/{FOOD_MATCH}_{start_num}_{end_num}{work4food_file_suffix} by convention so that GPR training and evaluation work. The options for **work4food_file_suffix** are: 
+   Note that the logs should be saved in file  ```../../results/{city_name}/{day_num}/{algorithm_name}_{start_num}_{end_num}{work4food_file_suffix}``` by convention so that GPR training and evaluation work. The options for **work4food_file_suffix** are: 
    ```
-     '{_25_static, _25_static_frac{int(100*fraction_agents)}, _25_static_driverreject, _dynamic, _dynamic_driverreject}'
+     '{_25_static, _25_static_frac{int(100*fraction_agents)}, _25_static_driverreject, _dynamic, _dynamic_driverreject, _rating}'
    ```
 
 2. GPR Training: 
@@ -102,7 +106,7 @@
   - Training Data: Day 2 and day 5 are training days. Run WORK4FOOD on these days with 100,90,80,70 and 60 fraction of agents available.
    Example:
    ```bash
-   cd code/pytorch-cpp/build/
+   cd pytorch-cpp/build/
    ./main -algo WORK4FOOD -city A -day 2 -eta 60 -k 200 -gamma 0.5 -delta 180 -start 0 -end 24 -de_frac 0.9 -gpr_model ../../gpr_models/model_A_days_2_and_5_25_static_pay_2 > ../../results/A/2/WORK4FOOD_0_24_25_static_frac90.results
    ``` 
 
@@ -129,7 +133,7 @@
    python3 analysis_scripts/overflow_analysis.py [city_name] [day_num] [algorithm_name] [work4food_file_suffix] 
    ```
 
-   The results get saved in `code/analysis_results` directory.
+   The results get saved in `analysis_results` directory.
 
    - The parameters are explained below:
      - **city_name**: Name of city \[Required\]
@@ -146,9 +150,9 @@
      'FOOD_MATCH' = FoodMatch implimentation proposed by Jhoshi et. al. [1]
      'FAIR_FOODY' = FairFoody implementation proposed by Anjali et. al. [2]
      ```
-     - **work4food_file_suffix**: file suffix for different WORK4FOOD variation results  \[Optional\]
+     - **work4food_file_suffix**: file suffix for different WORK4FOOD variation results  \[Required only for WORK4FOOD\]
      ```
-     '{_25_static, _25_static_frac{int(100*fraction_agents)}, _25_static_driverreject, _dynamic, _dynamic_driverreject}'
+     '{_25_static, _25_static_frac{int(100*fraction_agents)}, _25_static_driverreject, _dynamic, _dynamic_driverreject, _rating}'
      ```
   
    - Sample command:
@@ -160,13 +164,14 @@
 
 ## Code Description
 
-- `main.cpp` - contains the code that drives the simulation.<br>
-  It produces a log of simulation on stdout. This is piped to a file for evaluation.
-- `include/` - contains code for the simulation framework and algorithms.
-- `include/constants.cpp` - contains the default parameters used.
-- `include/vehicle_assignment.cpp` - contains the code for FairFoody,FoodMatch and Work4Food algorithms.
-- `gpr_training/work_predict.py` - contains the GPR training code used in our paper.
-- `analysis_scripts/performance_analysis.py` - reads the simulation log and reports metrics defined in our paper.
+- `main.cpp` - Contains the code that drives the simulation.<br>
+  It produces a log of simulation on stdout. This is redirected to a file for GPR training and evaluation.
+- `include/` - Contains code for the simulation framework and algorithms.
+- `include/constants.cpp` - Contains the default parameters used.
+- `include/vehicle_assignment.cpp` - Contains the code for Work4Food,FoodMatch and FairFoody algorithms.
+- `gpr_training/work_predict.py` - Contains the GPR training code used in our paper.
+- `analysis_scripts/performance_analysis.py` - Reads the simulation log and reports performance metrics defined in our paper.
+- `analysis_scripts/overflow_analysis.py` - Reads the simulation log and reports overflow metrics defined in our paper.
 
 ## References
 

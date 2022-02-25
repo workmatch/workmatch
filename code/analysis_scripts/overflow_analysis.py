@@ -3,8 +3,6 @@ import glob
 import time
 from datetime import datetime
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import PercentFormatter
 import os
 import statistics
 import sys
@@ -18,8 +16,6 @@ if(algo == "WORK4FOOD"):
     min_wage_per_second = sys.argv[4]
 else:
     min_wage_per_second = ''
-        
-min_wage_discount =  '_0'
 
 base_dir = f"../analysis_results/{city}/{day}/"
 if not os.path.exists(base_dir):
